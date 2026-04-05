@@ -1,0 +1,79 @@
+"""
+app.py — Gradio web UI for PharmacyInventoryEnv on Hugging Face Spaces.
+Allows interactive play or baseline agent demo.
+"""
+
+import gradio as gr
+from pharmacy_env import PharmacyInventoryEnv, MEDICINES_CATALOG
+from graders import EasyGrader, MediumGrader, HardGrader
+from baseline_agent import baseline_agent
+import json
+
+_env: PharmacyInventoryEnv | None = None
+_state = None
+
+
+def reset_env(task: str, seed: int):
+    global _env, _state
+    _env = PharmacyInventoryEnv(task=task, seed=int(seed))
+    _state = _env.reset()
+    return _env.render(), json.dumps(_state.model_dump(), indent=2)
+
+
+def step_action(action_type: str, med_idx: int, qty: int, rx_id: str):
+    global _state
+    if _env is None:
+        return "Please reset the environment first.", "{}"
+
+    if action_type == "reorder":
+        action = {"type": "reorder", "medicine_idx": int(med_idx), "qty": int(qty)}
+    elif action_type == "fulfill":
+        action = {"type": "fulfill", "prescription_id": rx_id.strip()}
+    elif action_type == "discard":
+        action = {"type": "discard", "medicine_idx": int(med_idx)}
+    else:
+        action = {"type": "wait"}
+
+    _state, reward, done, info = _env.step(action)
+    render = _env.render()
+    if done:
+        render += f"\n\n🏁 EPISODE DONE | Final Score: {_state.score:.4f}"
+    return render + f"\n\nReward: {reward:+.3f} | {info.get('result', '')}", \
+           json.dumps(_state.model_dump(), indent=2)
+
+
+def run_baseline(task: str, seed: int):
+    grader_cls = {"easy": EasyGrader, "medium": MediumGrader, "hard": HardGrader}[task]
+    result = grader_cls().run(baseline_agent, seed=int(seed))
+    return json.dumps(result, indent=2)
+
+
+with gr.Blocks(title="PharmacyInventoryEnv") as demo:
+    gr.Markdown("# 💊 PharmacyInventoryEnv — OpenEnv Demo")
+    gr.Markdown("A real-world pharmacy inventory management environment. Reset, then step through actions or run the baseline agent.")
+
+    with gr.Row():
+        task_dd = gr.Dropdown(["easy", "medium", "hard"], value="easy", label="Task")
+        seed_sl = gr.Slider(0, 999, value=42, step=1, label="Seed")
+        reset_btn = gr.Button("🔄 Reset", variant="primary")
+
+    render_out = gr.Textbox(label="Environment Render", lines=20, max_lines=30)
+    state_out = gr.Textbox(label="State JSON", lines=10, max_lines=15)
+
+    gr.Markdown("### Take an Action")
+    with gr.Row():
+        action_dd = gr.Dropdown(["reorder", "fulfill", "discard", "wait"], value="wait", label="Action Type")
+        med_idx_in = gr.Number(value=0, label="Medicine Index (0-5)", precision=0)
+        qty_in = gr.Number(value=10, label="Qty (for reorder)", precision=0)
+        rx_id_in = gr.Textbox(label="Prescription ID (for fulfill)", value="")
+    step_btn = gr.Button("▶ Step")
+
+    gr.Markdown("### Run Baseline Agent")
+    baseline_btn = gr.Button("🤖 Run Baseline Agent")
+    baseline_out = gr.Textbox(label="Baseline Results", lines=15)
+
+    reset_btn.click(reset_env, [task_dd, seed_sl], [render_out, state_out])
+    step_btn.click(step_action, [action_dd, med_idx_in, qty_in, rx_id_in], [render_out, state_out])
+    baseline_btn.click(run_baseline, [task_dd, seed_sl], baseline_out)
+
+demo.launch(server_name="0.0.0.0", server_port=7860)
