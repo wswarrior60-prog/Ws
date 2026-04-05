@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PharmacyInventoryEnv — OpenEnv Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f1a;
+    --surface: #111827;
+    --surface2: #1a2437;
+    --border: #1e3a5f;
+    --green: #10b981;
+    --green-dim: #065f46;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --blue: #3b82f6;
+    --cyan: #06b6d4;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-display: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 28px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .logo { font-size: 28px; }
+
+  header h1 {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.5px;
+  }
+
+  header p {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+    font-family: var(--font-mono);
+  }
+
+  .badge {
+    margin-left: auto;
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid var(--green);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+
+  /* ── Layout ── */
+  .main {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 0;
+    height: calc(100vh - 73px);
+    overflow: hidden;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .panel {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    background: rgba(59,130,246,0.1);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 12px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--cyan);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .panel-body { padding: 12px; }
+
+  /* ── Controls ── */
+  label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 4px;
+    margin-top: 10px;
+  }
+
+  label:first-child { margin-top: 0; }
+
+  select, input[type=number], input[type=text] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 10px;
+    border-radius: 5px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  select:focus, input:focus {
+    border-color: var(--blue);
+  }
+
+  button {
+    width: 100%;
+    padding: 9px;
+    border: none;
+    border-radius: 5px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 10px;
+  }
+
+  .btn-primary {
+    background: var(--blue);
+    color: #fff;
+  }
+
+  .btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
+
+  .btn-green {
+    background: var(--green);
+    color: #fff;
+  }
+
+  .btn-green:hover { background: #059669; transform: translateY(-1px); }
+
+  .btn-yellow {
+    background: var(--yellow);
+    color: #000;
+  }
+
+  .btn-yellow:hover { background: #d97706; transform: translateY(-1px); }
+
+  .btn-red {
+    background: var(--red);
+    color: #fff;
+  }
+
+  .btn-red:hover { background: #dc2626; transform: translateY(-1px); }
+
+  /* ── Stat pills ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .stat {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    text-align: center;
+  }
+
+  .stat-val {
+    font-size: 18px;
+    font-weight: 700;
+    font-family: var(--font-display);
+  }
+
+  .stat-label {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  /* ── Score bar ── */
+  .score-bar-wrap {
+    background: var(--bg);
+    border-radius: 4px;
+    height: 8px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+
+  .score-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), var(--cyan));
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  /* ── Main content ── */
+  .content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Inventory grid ── */
+  .inventory-section {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-size: 10px;
+    color: var(--cyan);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .med-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+
+  .med-card:hover { border-color: var(--blue); }
+
+  .med-card.critical { border-color: var(--red); }
+  .med-card.warning { border-color: var(--yellow); }
+  .med-card.ok { border-color: var(--green-dim); }
+
+  .med-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .med-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+
+  .med-row span:last-child { color: var(--text); }
+
+  .stock-bar {
+    height: 4px;
+    background: var(--bg);
+    border-radius: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+
+  .stock-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  .med-idx {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 9px;
+    color: var(--muted);
+    background: var(--bg);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* ── Prescriptions ── */
+  .rx-section {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 12px 20px;
+  }
+
+  .rx-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-right: 4px;
+  }
+
+  .rx-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.15s;
+  }
+
+  .rx-card.fulfilled {
+    opacity: 0.4;
+    border-style: dashed;
+  }
+
+  .rx-card.fulfilled .rx-id { text-decoration: line-through; }
+
+  .rx-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .rx-status.open { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
+  .rx-status.done { background: var(--green); }
+
+  .rx-id { font-size: 10px; color: var(--muted); flex-shrink: 0; }
+  .rx-med { flex: 1; font-size: 11px; color: #fff; }
+  .rx-qty { font-size: 10px; color: var(--cyan); }
+
+  .rx-fill-btn {
+    background: var(--green-dim);
+    border: 1px solid var(--green);
+    color: var(--green);
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    width: auto;
+    margin-top: 0;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .rx-fill-btn:hover { background: var(--green); color: #000; transform: none; }
+  .rx-fill-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* ── Log ── */
+  .log-section {
+    height: 120px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    padding: 8px 16px;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  .log-line {
+    font-size: 11px;
+    color: var(--muted);
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .log-line .ts { color: var(--blue); margin-right: 8px; }
+  .log-line .reward-pos { color: var(--green); }
+  .log-line .reward-neg { color: var(--red); }
+  .log-line .msg { color: var(--text); }
+
+  /* ── Done overlay ── */
+  .done-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .done-overlay.show { display: flex; }
+
+  .done-box {
+    background: var(--surface2);
+    border: 2px solid var(--green);
+    border-radius: 12px;
+    padding: 32px 48px;
+    text-align: center;
+  }
+
+  .done-box h2 {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+
+  .done-score {
+    font-size: 64px;
+    font-weight: 800;
+    font-family: var(--font-display);
+    margin: 16px 0;
+  }
+
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">💊</div>
+  <div>
+    <h1>PharmacyInventoryEnv</h1>
+    <p>step() / reset() / state() — Real-world OpenEnv Environment</p>
+  </div>
+  <div class="badge">OPENENV v1.0</div>
+</header>
+
+<div class="main">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+
+    <!-- Episode controls -->
+    <div class="panel">
+      <div class="panel-header">⚙ Episode Setup</div>
+      <div class="panel-body">
+        <label>Task Difficulty</label>
+        <select id="taskSel">
+          <option value="easy">Easy — 14 days, 1-2 Rx/day</option>
+          <option value="medium">Medium — 30 days, 2-5 Rx/day</option>
+          <option value="hard">Hard — 60 days, 3-8 Rx/day</option>
+        </select>
+        <label>Seed</label>
+        <input type="number" id="seedIn" value="42" min="0" max="999">
+        <button class="btn-primary" onclick="resetEnv()">🔄 Reset Environment</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="panel">
+      <div class="panel-header">📊 Episode Stats</div>
+      <div class="panel-body">
+        <div class="stats-row">
+          <div class="stat">
+            <div class="stat-val" id="statDay" style="color:var(--cyan)">—</div>
+            <div class="stat-label">Day</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" id="statCash" style="color:var(--green)">—</div>
+            <div class="stat-label">Cash ₹</div>
+          </div>
+        </div>
+        <div class="stats-row">
+          <div class="stat">
+            <div class="stat-val" id="statStockouts" style="color:var(--red)">—</div>
+            <div class="stat-label">Stockouts</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" id="statExpired" style="color:var(--yellow)">—</div>
+            <div class="stat-label">Expired ₹</div>
+          </div>
+        </div>
+        <label style="margin-top:8px">Score (0.0 – 1.0)</label>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:4px">
+          <div class="score-bar-wrap" style="flex:1">
+            <div class="score-bar" id="scoreBar" style="width:0%"></div>
+          </div>
+          <span id="scoreVal" style="font-size:13px; font-weight:700; color:var(--green); min-width:42px">0.000</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reorder action -->
+    <div class="panel">
+      <div class="panel-header">📦 Reorder Stock</div>
+      <div class="panel-body">
+        <label>Medicine Index (0–5)</label>
+        <input type="number" id="reorderIdx" value="0" min="0" max="5">
+        <label>Quantity</label>
+        <input type="number" id="reorderQty" value="50" min="1" max="300">
+        <button class="btn-blue" style="background:var(--blue); color:#fff" onclick="doReorder()">📦 Reorder</button>
+      </div>
+    </div>
+
+    <!-- Discard -->
+    <div class="panel">
+      <div class="panel-header">🗑 Discard Near-Expiry</div>
+      <div class="panel-body">
+        <label>Medicine Index (0–5)</label>
+        <input type="number" id="discardIdx" value="0" min="0" max="5">
+        <button class="btn-red" onclick="doDiscard()">🗑 Discard</button>
+      </div>
+    </div>
+
+    <!-- Wait -->
+    <div class="panel">
+      <div class="panel-header">⏸ Pass Turn</div>
+      <div class="panel-body">
+        <button class="btn-yellow" onclick="doWait()">⏸ Wait (end day)</button>
+      </div>
+    </div>
+
+    <!-- Baseline -->
+    <div class="panel">
+      <div class="panel-header">🤖 Baseline Agent</div>
+      <div class="panel-body">
+        <button class="btn-green" onclick="runBaseline()">▶ Run Full Episode</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Main content -->
+  <div class="content">
+
+    <div class="inventory-section">
+      <div class="section-title">🧪 Inventory — 6 Medicines</div>
+      <div class="inventory-grid" id="inventoryGrid">
+        <div style="color:var(--muted); font-size:12px; grid-column:1/-1; padding:20px; text-align:center">
+          Reset the environment to begin ↩
+        </div>
+      </div>
+    </div>
+
+    <div class="rx-section">
+      <div class="section-title" style="margin-bottom:8px">📋 Prescriptions
+        <span id="rxCount" style="color:var(--muted); font-weight:400; text-transform:none; letter-spacing:0; font-size:11px"></span>
+      </div>
+      <div class="rx-list" id="rxList">
+        <div style="color:var(--muted); font-size:12px; padding:20px; text-align:center">No prescriptions yet.</div>
+      </div>
+    </div>
+
+    <div class="log-section" id="logSection">
+      <div class="log-line"><span class="ts">[00:00]</span><span class="msg">Environment ready. Press Reset to start.</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Done overlay -->
+<div class="done-overlay" id="doneOverlay">
+  <div class="done-box">
+    <h2>🏁 Episode Complete</h2>
+    <div class="done-score" id="doneScore">0.00</div>
+    <div style="color:var(--muted); font-size:13px" id="doneSummary"></div>
+    <button class="btn-primary" style="margin-top:20px; width:auto; padding:10px 32px" onclick="closeDone()">Play Again</button>
+  </div>
+</div>
+
+<script>
+// ─── Simulated environment (JS port of pharmacy_env.py) ───
+
+const MEDICINES = [
+  {name:"Paracetamol 500mg",  minStock:50, maxStock:300, unitPrice:2.5,  rxRequired:false},
+  {name:"Amoxicillin 250mg",  minStock:20, maxStock:120, unitPrice:8.0,  rxRequired:true},
+  {name:"Metformin 500mg",    minStock:30, maxStock:200, unitPrice:3.5,  rxRequired:true},
+  {name:"Cetirizine 10mg",    minStock:25, maxStock:150, unitPrice:1.8,  rxRequired:false},
+  {name:"Omeprazole 20mg",    minStock:20, maxStock:100, unitPrice:5.0,  rxRequired:false},
+  {name:"Azithromycin 500mg", minStock:10, maxStock:60,  unitPrice:18.0, rxRequired:true},
+];
+
+const TASK_CFG = {
+  easy:   {days:14, rxMin:1, rxMax:2, expMin:30, expMax:90, cash:5000},
+  medium: {days:30, rxMin:2, rxMax:5, expMin:15, expMax:60, cash:3000},
+  hard:   {days:60, rxMin:3, rxMax:8, expMin:7,  expMax:30, cash:1500},
+};
+
+let env = null;
+
+class PharmacyEnv {
+  constructor(task, seed) {
+    this.task = task;
+    this.seed = seed;
+    this.cfg = TASK_CFG[task];
+    this.rng = mulberry32(seed);
+    this.day = 1;
+    this.totalDays = this.cfg.days;
+    this.cash = this.cfg.cash;
+    this.expiredLosses = 0;
+    this.stockoutEvents = 0;
+    this.fulfilled = 0;
+    this.totalRx = 0;
+    this.prescriptions = [];
+    this.score = 0;
+
+    this.inventory = MEDICINES.map(m => ({
+      ...m,
+      stock: this._ri(m.minStock, Math.floor(m.maxStock / 2)),
+      expiryDays: this._ri(this.cfg.expMin, this.cfg.expMax),
+    }));
+
+    this.prescriptions = this._genRx();
+  }
+
+  reset() { return this; }
+
+  step(action) {
+    let reward = 0;
+    let info = {action: action.type, day: this.day};
+
+    if (action.type === "reorder") reward += this._reorder(action, info);
+    else if (action.type === "fulfill") reward += this._fulfill(action, info);
+    else if (action.type === "discard") reward += this._discard(action, info);
+    else info.result = "waited";
+
+    reward += this._endOfDay(info);
+    const done = this.day > this.totalDays;
+    this.score = this._calcScore();
+    return {reward, done, info};
+  }
+
+  _reorder(action, info) {
+    const {idx, qty} = action;
+    if (idx < 0 || idx >= 6 || qty <= 0) { info.result = "invalid reorder"; return -0.01; }
+    const m = this.inventory[idx];
+    const space = m.maxStock - m.stock;
+    const realQty = Math.min(qty, space);
+    const cost = realQty * m.unitPrice * 0.6;
+    if (cost > this.cash) { info.result = "insufficient cash"; return -0.01; }
+    this.cash -= cost;
+    m.stock += realQty;
+    m.expiryDays = Math.max(m.expiryDays, Math.floor(this.cfg.expMax / 2));
+    info.result = `Reordered ${realQty}x ${m.name} for ₹${cost.toFixed(1)}`;
+    return 0.02;
+  }
+
+  _fulfill(action, info) {
+    const rx = this.prescriptions.find(r => r.id === action.rxId && !r.fulfilled);
+    if (!rx) { info.result = "prescription not found"; return -0.01; }
+    const med = this.inventory.find(m => m.name === rx.medicine);
+    if (!med) { info.result = "medicine not stocked"; return -0.05; }
+    if (med.stock < rx.qty) {
+      info.result = `Stockout: need ${rx.qty}, have ${med.stock}`;
+      this.stockoutEvents++;
+      this.totalRx++;
+      rx.fulfilled = true;
+      rx.stockout = true;
+      return -0.05;
+    }
+    const revenue = rx.qty * med.unitPrice;
+    med.stock -= rx.qty;
+    rx.fulfilled = true;
+    this.cash += revenue;
+    this.fulfilled++;
+    this.totalRx++;
+    info.result = `Fulfilled ${rx.id}: ${rx.qty}x ${rx.medicine} +₹${revenue.toFixed(1)}`;
+    return 0.15;
+  }
+
+  _discard(action, info) {
+    const {idx} = action;
+    if (idx < 0 || idx >= 6) { info.result = "invalid discard"; return -0.01; }
+    const m = this.inventory[idx];
+    const lost = m.stock * m.unitPrice * 0.6;
+    this.expiredLosses += lost;
+    info.result = `Discarded ${m.stock}x ${m.name}, lost ₹${lost.toFixed(1)}`;
+    m.stock = 0;
+    return -0.03;
+  }
+
+  _endOfDay(info) {
+    let reward = 0;
+    this.inventory.forEach(m => {
+      m.expiryDays--;
+      if (m.expiryDays <= 0) {
+        const lost = m.stock * m.unitPrice * 0.6;
+        this.expiredLosses += lost;
+        if (m.stock > 0) reward -= 0.02;
+        m.stock = 0;
+        m.expiryDays = this.cfg.expMax;
+      }
+    });
+    this.day++;
+    if (this.day <= this.totalDays) {
+      this.prescriptions.push(...this._genRx());
+    }
+    return reward;
+  }
+
+  _genRx() {
+    const n = this._ri(this.cfg.rxMin, this.cfg.rxMax);
+    const out = [];
+    const day = this.day;
+    for (let i = 0; i < n; i++) {
+      const med = MEDICINES[Math.floor(this.rng() * MEDICINES.length)];
+      out.push({
+        id: `RX${day}_${i}_${this._ri(1000,9999)}`,
+        medicine: med.name,
+        qty: this._ri(1, 5),
+        fulfilled: false,
+        stockout: false,
+      });
+    }
+    return out;
+  }
+
+  _calcScore() {
+    const fr = this.fulfilled / Math.max(this.totalRx, 1);
+    const cs = Math.min(this.cash / this.cfg.cash, 2) / 2;
+    const ep = Math.min(this.expiredLosses / 5000, 1);
+    return Math.max(0, Math.min(1, 0.5 * fr + 0.3 * cs - 0.2 * ep));
+  }
+
+  _ri(a, b) { return Math.floor(this.rng() * (b - a + 1)) + a; }
+}
+
+function mulberry32(a) {
+  return function() {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    var t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
+
+// ─── UI ───
+
+function resetEnv() {
+  const task = document.getElementById("taskSel").value;
+  const seed = parseInt(document.getElementById("seedIn").value) || 42;
+  env = new PharmacyEnv(task, seed);
+  log(`Environment reset — Task: ${task.toUpperCase()}, Seed: ${seed}, Days: ${env.totalDays}`);
+  render();
+  document.getElementById("doneOverlay").classList.remove("show");
+}
+
+function doReorder() {
+  if (!env) { alert("Reset first"); return; }
+  const idx = parseInt(document.getElementById("reorderIdx").value);
+  const qty = parseInt(document.getElementById("reorderQty").value);
+  const {reward, done, info} = env.step({type:"reorder", idx, qty});
+  log(info.result || "reorder", reward, done);
+  render(); if (done) showDone();
+}
+
+function doDiscard() {
+  if (!env) { alert("Reset first"); return; }
+  const idx = parseInt(document.getElementById("discardIdx").value);
+  const {reward, done, info} = env.step({type:"discard", idx});
+  log(info.result || "discard", reward, done);
+  render(); if (done) showDone();
+}
+
+function doWait() {
+  if (!env) { alert("Reset first"); return; }
+  const {reward, done, info} = env.step({type:"wait"});
+  log("Waited (end of day)", reward, done);
+  render(); if (done) showDone();
+}
+
+function doFulfill(rxId) {
+  if (!env) return;
+  const {reward, done, info} = env.step({type:"fulfill", rxId});
+  log(info.result || "fulfill", reward, done);
+  render(); if (done) showDone();
+}
+
+function runBaseline() {
+  if (!env) { resetEnv(); }
+  const task = document.getElementById("taskSel").value;
+  const seed = parseInt(document.getElementById("seedIn").value) || 42;
+  env = new PharmacyEnv(task, seed);
+
+  function baselineAgent(e) {
+    // 1. Fulfill open Rx
+    for (const rx of e.prescriptions) {
+      if (rx.fulfilled) continue;
+      const med = e.inventory.find(m => m.name === rx.medicine);
+      if (med && med.stock >= rx.qty) return {type:"fulfill", rxId: rx.id};
+    }
+    // 2. Reorder below min
+    for (let i = 0; i < e.inventory.length; i++) {
+      const m = e.inventory[i];
+      if (m.stock < m.minStock) {
+        const qty = m.maxStock - m.stock;
+        const cost = qty * m.unitPrice * 0.6;
+        if (cost <= e.cash) return {type:"reorder", idx:i, qty};
+        const afford = Math.floor(e.cash / (m.unitPrice * 0.6));
+        if (afford > 0) return {type:"reorder", idx:i, qty:afford};
+      }
+    }
+    // 3. Discard near-expiry
+    for (let i = 0; i < e.inventory.length; i++) {
+      if (e.inventory[i].expiryDays <= 3 && e.inventory[i].stock > 0)
+        return {type:"discard", idx:i};
+    }
+    return {type:"wait"};
+  }
+
+  let steps = 0;
+  let done = false;
+  while (!done && steps < 5000) {
+    const action = baselineAgent(env);
+    const res = env.step(action);
+    done = res.done;
+    steps++;
+  }
+  log(`Baseline finished: ${steps} steps | Score: ${env.score.toFixed(4)}`, null, true);
+  render();
+  showDone();
+}
+
+function render() {
+  if (!env) return;
+
+  // Stats
+  document.getElementById("statDay").textContent = `${env.day-1}/${env.totalDays}`;
+  document.getElementById("statCash").textContent = `${Math.round(env.cash)}`;
+  document.getElementById("statStockouts").textContent = env.stockoutEvents;
+  document.getElementById("statExpired").textContent = `${Math.round(env.expiredLosses)}`;
+  const score = env.score;
+  document.getElementById("scoreVal").textContent = score.toFixed(3);
+  document.getElementById("scoreBar").style.width = (score * 100) + "%";
+
+  // Inventory
+  const grid = document.getElementById("inventoryGrid");
+  grid.innerHTML = env.inventory.map((m, i) => {
+    const pct = m.stock / m.maxStock;
+    const cls = m.stock < m.minStock ? "critical" : m.expiryDays <= 7 ? "warning" : "ok";
+    const barColor = cls === "critical" ? "var(--red)" : cls === "warning" ? "var(--yellow)" : "var(--green)";
+    return `
+      <div class="med-card ${cls}">
+        <div class="med-idx">#${i}</div>
+        <div class="med-name" title="${m.name}">${m.name}</div>
+        <div class="med-row"><span>Stock</span><span>${m.stock}/${m.maxStock}</span></div>
+        <div class="med-row"><span>Expiry</span><span>${m.expiryDays}d</span></div>
+        <div class="med-row"><span>Price</span><span>₹${m.unitPrice}</span></div>
+        <div class="stock-bar">
+          <div class="stock-fill" style="width:${(pct*100).toFixed(1)}%; background:${barColor}"></div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // Prescriptions
+  const open = env.prescriptions.filter(r => !r.fulfilled);
+  const done2 = env.prescriptions.filter(r => r.fulfilled);
+  document.getElementById("rxCount").textContent = `(${open.length} open, ${done2.length} done)`;
+
+  const rxList = document.getElementById("rxList");
+  const allRx = [...open, ...done2.slice(-5)];
+  if (allRx.length === 0) {
+    rxList.innerHTML = `<div style="color:var(--muted); font-size:12px; padding:20px; text-align:center">No prescriptions yet.</div>`;
+    return;
+  }
+  rxList.innerHTML = allRx.map(rx => {
+    const med = env.inventory.find(m => m.name === rx.medicine);
+    const canFill = !rx.fulfilled && med && med.stock >= rx.qty;
+    return `
+      <div class="rx-card ${rx.fulfilled ? 'fulfilled' : ''}">
+        <div class="rx-status ${rx.fulfilled ? 'done' : 'open'}"></div>
+        <div class="rx-id">${rx.id.substring(0,12)}…</div>
+        <div class="rx-med">${rx.medicine}</div>
+        <div class="rx-qty">×${rx.qty}</div>
+        ${!rx.fulfilled
+          ? `<button class="rx-fill-btn" onclick="doFulfill('${rx.id}')" ${canFill?'':'disabled'}>
+               ${canFill ? '✓ Fill' : 'No Stock'}
+             </button>`
+          : `<span style="font-size:10px; color:${rx.stockout ? 'var(--red)' : 'var(--green)'}">
+               ${rx.stockout ? '✗ miss' : '✓ done'}
+             </span>`
+        }
+      </div>
+    `;
+  }).join("");
+}
+
+let logStep = 0;
+function log(msg, reward, done) {
+  logStep++;
+  const section = document.getElementById("logSection");
+  const rewardStr = reward != null
+    ? `<span class="${reward >= 0 ? 'reward-pos' : 'reward-neg'}">[${reward >= 0 ? '+' : ''}${reward?.toFixed(3)}]</span> `
+    : '';
+  const line = document.createElement("div");
+  line.className = "log-line";
+  line.innerHTML = `<span class="ts">[${String(logStep).padStart(3,'0')}]</span>${rewardStr}<span class="msg">${msg}</span>`;
+  section.appendChild(line);
+  section.scrollTop = section.scrollHeight;
+}
+
+function showDone() {
+  const score = env.score;
+  const color = score >= 0.65 ? "var(--green)" : score >= 0.45 ? "var(--yellow)" : "var(--red)";
+  const label = score >= 0.65 ? "🏆 Excellent!" : score >= 0.45 ? "👍 Decent" : "📉 Try again";
+  document.getElementById("doneScore").textContent = score.toFixed(3);
+  document.getElementById("doneScore").style.color = color;
+  document.getElementById("doneSummary").innerHTML =
+    `${label} &nbsp;|&nbsp; Stockouts: ${env.stockoutEvents} &nbsp;|&nbsp; Expired: ₹${Math.round(env.expiredLosses)} &nbsp;|&nbsp; Cash: ₹${Math.round(env.cash)}`;
+  document.getElementById("doneOverlay").classList.add("show");
+}
+
+function closeDone() {
+  document.getElementById("doneOverlay").classList.remove("show");
+  resetEnv();
+}
+</script>
+</body>
+</html>
