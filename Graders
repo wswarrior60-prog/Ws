@@ -1,0 +1,71 @@
+"""
+Agent graders for PharmacyInventoryEnv.
+Each grader runs a full episode and returns a normalized score 0.0–1.0.
+"""
+
+from __future__ import annotations
+from pharmacy_env import PharmacyInventoryEnv, PharmacyState
+
+
+class BaseGrader:
+    task: str = "easy"
+    target_score: float = 0.65
+
+    def run(self, agent_fn, seed: int = 42) -> dict:
+        """
+        Run agent_fn(state) -> action for a full episode.
+
+        agent_fn receives a PharmacyState and must return a valid action dict.
+        Returns grading report dict.
+        """
+        env = PharmacyInventoryEnv(task=self.task, seed=seed)
+        state = env.reset()
+
+        total_reward = 0.0
+        steps = 0
+        trajectory = []
+
+        while True:
+            action = agent_fn(state)
+            next_state, reward, done, info = env.step(action)
+            total_reward += reward
+            steps += 1
+            trajectory.append({"step": steps, "action": action, "reward": reward, "info": info})
+            state = next_state
+            if done:
+                break
+
+        final_score = state.score
+        passed = final_score >= self.target_score
+
+        return {
+            "task": self.task,
+            "seed": seed,
+            "steps": steps,
+            "total_reward": round(total_reward, 4),
+            "final_score": final_score,
+            "target_score": self.target_score,
+            "passed": passed,
+            "cash_balance": state.cash_balance,
+            "stockout_events": state.stockout_events,
+            "expired_losses": state.expired_losses,
+            "trajectory_length": len(trajectory),
+        }
+
+
+class EasyGrader(BaseGrader):
+    """14-day task. Target score ≥ 0.65."""
+    task = "easy"
+    target_score = 0.65
+
+
+class MediumGrader(BaseGrader):
+    """30-day task. Target score ≥ 0.55."""
+    task = "medium"
+    target_score = 0.55
+
+
+class HardGrader(BaseGrader):
+    """60-day task. Target score ≥ 0.45."""
+    task = "hard"
+    target_score = 0.45
